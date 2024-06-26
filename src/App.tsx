@@ -5,7 +5,7 @@
 
 import "./App.scss";
 
-import type { ScreenViewport } from "@itwin/core-frontend";
+import type { IModelConnection, ScreenViewport } from "@itwin/core-frontend";
 import { FitViewTool, IModelApp, StandardViewId } from "@itwin/core-frontend";
 import { FillCentered } from "@itwin/core-react";
 import { ProgressLinear } from "@itwin/itwinui-react";
@@ -37,6 +37,9 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Auth } from "./Auth";
 import { history } from "./history";
+import { GroupingMappingProvider } from "@itwin/grouping-mapping-widget";
+import { ReportsConfigProvider, ReportsConfigWidget } from "@itwin/reports-config-widget-react";
+import { UiProvider } from "./UiItemsProviders/UiProvider";
 
 const App: React.FC = () => {
   const [iModelId, setIModelId] = useState(process.env.IMJS_IMODEL_ID);
@@ -123,6 +126,11 @@ const App: React.FC = () => {
     });
   }, []);
 
+  const iModelConnected = useCallback ((iModel: IModelConnection) => {
+    IModelApp.quantityFormatter.setActiveUnitSystem("metric", true);
+
+  }, [])
+
   const viewCreatorOptions = useMemo(
     () => ({ viewportConfigurer: viewConfiguration }),
     [viewConfiguration]
@@ -134,6 +142,7 @@ const App: React.FC = () => {
     await PropertyGridManager.initialize();
     await MeasureTools.startup();
     MeasurementActionToolbar.setDefaultActionProvider();
+    await ReportsConfigWidget.initialize(IModelApp.localization);
   }, []);
 
   return (
@@ -153,6 +162,7 @@ const App: React.FC = () => {
         viewCreatorOptions={viewCreatorOptions}
         enablePerformanceMonitors={true} // see description in the README (https://www.npmjs.com/package/@itwin/web-viewer-react)
         onIModelAppInit={onIModelAppInit}
+                onIModelConnected = {iModelConnected}
         uiProviders={[
           new ViewerNavigationToolsProvider(),
           new ViewerContentToolsProvider({
@@ -182,7 +192,13 @@ const App: React.FC = () => {
             },
           }),
           new MeasureToolsUiItemsProvider(),
+          new GroupingMappingProvider(),
+          new ReportsConfigProvider(),
+          new MeasureToolsUiItemsProvider(),
+          new UiProvider(),
+          new UiProvider(),
         ]}
+        theme="dark"
       />
     </div>
   );
